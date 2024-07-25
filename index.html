@@ -27,56 +27,87 @@
             <svg width=300 height=300></svg>
         </div>
         <script>
-            async function framework(margin) {
-                const data = await d3.csv("https://flunky.github.io/cars2017.csv");
-                var width = 400;
-                var height = 400;
-                // var margin = 50;
 
-                var x = d3.scaleLog([10,150], [0,width]).base(10);
-                var xaxis = d3.axisBottom(x).tickValues([10,20,50,100]).tickFormat(d3.format("~s")); 
+            async function framework(fromYear, toYear) {
+            
+                const data = await d3.csv("https://raw.githubusercontent.com/hlanier14/hlanier14.github.io/main/tuition.csv");
+                var width = 600;
+                var height = 600;
+                var margin = 50;
 
-                var y = d3.scaleLog([10,150], [height,0]).base(10);
-                var yaxis = d3.axisLeft(y).tickValues([10,20,50,100]).tickFormat(d3.format("~s")); 
+                const filteredData = data.filter(d => +d["Year"] <= fromYear);
+                const transitionData = data.filter(d => +d["Year"] >= fromYear && +d["Year"] <= toYear);
 
+                var x = d3.scaleLinear([1963, 2020], [0,width]);
+                var xaxis = d3.axisBottom(x).tickFormat(d3.format("")); 
+
+                var y = d3.scaleLinear([0,18000], [height,0]);
+                var yaxis = d3.axisLeft(y).tickFormat(d3.format("$~s")); 
+
+                // clear canvas
                 d3.select("svg")
                     .selectAll("*")
                     .remove();
 
-                d3.select("svg")
-                    .attr("width", width + 2 * margin)
-                    .attr("height", height + 2 * margin)
-                    .append("g")
-                    .attr("transform", "translate("+margin+","+margin+")")
-                    .selectAll("circle")
-                    .data(data)
-                    .enter()
-                    .append("circle")
-                    .attr("cx", function(d,i) {return x(+d["AverageCityMPG"]);})
-                    .attr("cy", function(d,i) {return y(+d["AverageHighwayMPG"]);})
-                    .attr("r", function(d,i) {return 2 + +d["EngineCylinders"];});
+                var svg = d3.select("svg")
+                            .attr("width", width + 2 * margin)
+                            .attr("height", height + 2 * margin)
+                            .append("g")
+                            .attr("transform", "translate("+margin+","+margin+")")
+                
+                var graph = svg.append("path")
+                                .datum(filteredData)
+                                .attr("fill", "none")
+                                .attr("stroke", "steelblue")
+                                .attr("stroke-width", 1.5)
+                                .attr("d", d3.line()
+                                            .x(function(d) { return x(+d["Year"]); })
+                                            .y(function(d) { return y(+d["4-Year Tution in 2020 Dollars"]); }))
+                
+                var transitionGraph = svg.append("path")
+                                        .datum(transitionData)
+                                        .attr("fill", "none")
+                                        .attr("stroke", "steelblue")
+                                        .attr("stroke-width", 1.5)
+                                        .attr("d", d3.line()
+                                                    .x(function(d) { return x(+d["Year"]); })
+                                                    .y(function(d) { return y(+d["4-Year Tution in 2020 Dollars"]); }))
+                
+                var totalLength = transitionGraph.node().getTotalLength();
 
-                d3.select("svg")
-                    .append("g")
-                    .attr("transform", "translate("+margin+","+(height+margin)+")")
+                transitionGraph.attr("stroke-dasharray", totalLength + " " + totalLength)
+                                .attr("stroke-dashoffset", totalLength)
+                                .transition()
+                                .duration(1500)
+                                .ease(d3.easeLinear)
+                                .attr("stroke-dashoffset", 0);
+
+                svg.append("g")
+                    .attr("transform", "translate(0,"+height+")")
                     .call(xaxis);
 
-                d3.select("svg")
-                    .append("g")
-                    .attr("transform", "translate("+margin+","+margin+")")
+                svg.append("g")
                     .call(yaxis);
             }
             async function sceneOne() {
-                await framework(50);
+                var fromYear = 1963;
+                var toYear = 1980;
+                await framework(fromYear, toYear);
             }
             async function sceneTwo() {
-                await framework(100);
+                var fromYear = 1980;
+                var toYear = 2000;
+                await framework(fromYear, toYear);
             }
             async function sceneThree() {
-                await framework(150);
+                var fromYear = 2000;
+                var toYear = 2010;
+                await framework(fromYear, toYear);
             }
             async function sceneFour() {
-                await framework(200);
+                var fromYear = 2010;
+                var toYear = 2020;
+                await framework(fromYear, toYear);
             }
         </script>
     </body>
