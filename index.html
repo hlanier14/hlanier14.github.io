@@ -1,1 +1,83 @@
-Hello World
+<html>
+    <script src='https://d3js.org/d3.v5.min.js'></script>
+    <style> 
+        circle {
+            fill: lightblue; 
+            stroke: black;
+        }
+        div {
+            display: flex;
+            margin-left: 4em;
+        }
+        button {
+            height: 2em;
+            width: 3em;
+            margin-top: 3em;
+        }
+        svg {
+            margin-left: 2em;
+        }
+    </style>
+    <body onload='sceneOne()'>
+        <div>
+            <button onclick='sceneOne()'>1</button>
+            <button onclick='sceneTwo()'>2</button>
+            <button onclick='sceneThree()'>3</button>
+            <button onclick='sceneFour()'>4</button>
+            <svg width=300 height=300></svg>
+        </div>
+        <script>
+            async function framework(margin) {
+                const data = await d3.csv("https://flunky.github.io/cars2017.csv");
+                var width = 400;
+                var height = 400;
+                // var margin = 50;
+
+                var x = d3.scaleLog([10,150], [0,width]).base(10);
+                var xaxis = d3.axisBottom(x).tickValues([10,20,50,100]).tickFormat(d3.format("~s")); 
+
+                var y = d3.scaleLog([10,150], [height,0]).base(10);
+                var yaxis = d3.axisLeft(y).tickValues([10,20,50,100]).tickFormat(d3.format("~s")); 
+
+                d3.select("svg")
+                    .selectAll("*")
+                    .remove();
+
+                d3.select("svg")
+                    .attr("width", width + 2 * margin)
+                    .attr("height", height + 2 * margin)
+                    .append("g")
+                    .attr("transform", "translate("+margin+","+margin+")")
+                    .selectAll("circle")
+                    .data(data)
+                    .enter()
+                    .append("circle")
+                    .attr("cx", function(d,i) {return x(+d["AverageCityMPG"]);})
+                    .attr("cy", function(d,i) {return y(+d["AverageHighwayMPG"]);})
+                    .attr("r", function(d,i) {return 2 + +d["EngineCylinders"];});
+
+                d3.select("svg")
+                    .append("g")
+                    .attr("transform", "translate("+margin+","+(height+margin)+")")
+                    .call(xaxis);
+
+                d3.select("svg")
+                    .append("g")
+                    .attr("transform", "translate("+margin+","+margin+")")
+                    .call(yaxis);
+            }
+            async function sceneOne() {
+                await framework(50);
+            }
+            async function sceneTwo() {
+                await framework(100);
+            }
+            async function sceneThree() {
+                await framework(150);
+            }
+            async function sceneFour() {
+                await framework(200);
+            }
+        </script>
+    </body>
+</html>
