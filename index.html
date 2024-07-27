@@ -96,22 +96,23 @@
                 var countries = d3.nest()
                     .key(function(d) { return d["Country"]; })
                     .entries(filteredData);
-                console.log(countries)
-                countries.forEach(function(countryData) {
+
+                var color = d3.scaleOrdinal(d3.schemeCategory10);
+                countries.forEach(function(countryData, index) {
                     svg.append("path")
                         .datum(countryData["values"])
                         .attr("fill", "none")
-                        .attr("stroke", "steelblue")
+                        .attr("stroke", color(index))
                         .attr("stroke-width", 1.5)
                         .attr("d", line)
                 });
 
-                var path = svg.append("path")
-                    .datum(filteredData)
-                    .attr("fill", "none")
-                    .attr("stroke", "steelblue")
-                    .attr("stroke-width", 1.5)
-                    .attr("d", line);
+                // var path = svg.append("path")
+                //     .datum(filteredData)
+                //     .attr("fill", "none")
+                //     .attr("stroke", "steelblue")
+                //     .attr("stroke-width", 1.5)
+                //     .attr("d", line);
 
                 // var transitionGraph = svg.append("path")
                 //     .datum(transitionData)
@@ -153,7 +154,26 @@
                     .attr('transform', 'translate(' + (width / 2) + ', -' + 25 + ')')
                     .append('text')
                     .attr('text-anchor', 'middle')
-                    .text('CO2 Emissions by Top Emitters From 1990 to 2021');
+                    .text('CO2 Emissions by Top 10 Countries In 2021');
+                
+                var legend = svg.selectAll(".legend")
+                    .data(countries)
+                    .enter()
+                    .append("g")
+                    .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+                legend.append("rect")
+                    .attr("x", width - 18)
+                    .attr("width", 18)
+                    .attr("height", 18)
+                    .style("fill", function(d, i) { return color(i); });
+
+                legend.append("text")
+                    .attr("x", width - 24)
+                    .attr("y", 9)
+                    .attr("dy", ".35em")
+                    .style("text-anchor", "end")
+                    .text(function(d) { return d.key; });
 
                 // var tooltipGroup = svg.append("g")
                 //                       .style("visibility", "hidden");
@@ -243,8 +263,8 @@
                 document.getElementsByClassName('sceneTitle')[0].innerText = 'Scene 1';
                 clearButtonSelection();
                 document.getElementById('1').className = 'selected';
-                var fromYear = 1963;
-                var toYear = 1980;
+                var fromYear = 1990;
+                var toYear = 1995;
                 await framework(fromYear, toYear);
             }
 
@@ -253,7 +273,7 @@
                 document.getElementsByClassName('sceneTitle')[0].innerText = 'Scene 2';
                 clearButtonSelection();
                 document.getElementById('2').className = 'selected';
-                var fromYear = 1980;
+                var fromYear = 1995;
                 var toYear = 2000;
                 await framework(fromYear, toYear);
             }
@@ -274,7 +294,7 @@
                 clearButtonSelection();
                 document.getElementById('4').className = 'selected';
                 var fromYear = 2010;
-                var toYear = 2020;
+                var toYear = 2021;
                 await framework(fromYear, toYear);
             }
 

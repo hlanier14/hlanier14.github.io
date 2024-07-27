@@ -16,7 +16,7 @@ df_pivoted['Total'] = sum_df.sum(axis=1)
 df_pivoted.fillna(0, inplace=True)
 
 total_2021 = df_pivoted[df_pivoted['Year'] == 2021][['Country', 'Total']]
-top_10_countries = total_2021.nlargest(10, 'Total')['Country']
-df_filtered = df_pivoted[df_pivoted['Country'].isin(top_10_countries)]
+top_5_countries = total_2021.nlargest(5, 'Total')['Country']
+df_filtered = df_pivoted[df_pivoted['Country'].isin(top_5_countries)]
 
 df_filtered.to_csv("../data/formatted.csv", index=False)
