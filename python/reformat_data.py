@@ -15,6 +15,8 @@ df_pivoted['Total'] = sum_df.sum(axis=1)
 
 df_pivoted.fillna(0, inplace=True)
 
+df_pivoted = df_pivoted[df_pivoted['Country'] != 'European Union (27)']
+
 total_2021 = df_pivoted[df_pivoted['Year'] == 2021][['Country', 'Total']]
 top_5_countries = total_2021.nlargest(5, 'Total')['Country']
 df_filtered = df_pivoted[df_pivoted['Country'].isin(top_5_countries)]
