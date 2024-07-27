@@ -1,1 +1,1 @@
-https://nces.ed.gov/programs/digest/d21/tables/dt21_330.10.asp
+https://www.wri.org/insights/history-carbon-dioxide-emissions
