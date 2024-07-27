@@ -8,10 +8,7 @@ df_melted['Year'] = df_melted['Year'].astype(int)
 df_pivoted = df_melted.pivot_table(index=['Country', 'Year'], columns='Sector', values='Value', aggfunc='sum')
 df_pivoted.reset_index(inplace=True)
 df_pivoted.columns.name = None
-
-sum_df = df_pivoted.copy()
-sum_df.drop(['Country', 'Year'], axis=1, inplace=True)
-df_pivoted['Total'] = sum_df.sum(axis=1)
+df_pivoted['Total'] = df_pivoted['Total excluding LUCF']
 
 df_pivoted.fillna(0, inplace=True)
 
@@ -20,5 +17,7 @@ df_pivoted = df_pivoted[df_pivoted['Country'] != 'European Union (27)']
 total_2021 = df_pivoted[df_pivoted['Year'] == 2021][['Country', 'Total']]
 top_5_countries = total_2021.nlargest(5, 'Total')['Country']
 df_filtered = df_pivoted[df_pivoted['Country'].isin(top_5_countries)]
+
+df_filtered.drop(['Land-Use Change and Forestry', 'Total excluding LUCF', 'Total including LUCF'], axis=1, inplace=True)
 
 df_filtered.to_csv("../data/formatted.csv", index=False)

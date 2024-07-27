@@ -70,9 +70,6 @@
                 var margin = 75;
                 var axisLabelOffset = 50;
 
-                const filteredData = data.filter(d => +d["Year"] <= fromYear);
-                const transitionData = data.filter(d => +d["Year"] >= fromYear && +d["Year"] <= toYear);
-
                 var x = d3.scaleLinear().domain([1990, 2021]).range([0, width]);
                 var xaxis = d3.axisBottom(x).tickFormat(d3.format(""));
 
@@ -95,40 +92,80 @@
                 
                 var countries = d3.nest()
                     .key(function(d) { return d["Country"]; })
-                    .entries(filteredData);
+                    .entries(data);
 
                 var color = d3.scaleOrdinal(d3.schemeCategory10);
+
+                var tooltip = d3.select("body").append("div")
+                    .attr("class", "tooltip")
+                    .style("visibility", "hidden");
+                
+                function handleMouseOver(event, countryData) {
+                    var year = Math.round(x.invert(d3.mouse(this)[0]));
+                    var country = countryData[0]["Country"];
+                    var sectors = data.filter(function(e) {
+                        return e["Country"] === country && +e["Year"] === year;
+                    });
+                    console.log(sectors)
+                    var sectorValues = {};
+                    sectors.forEach(function(e) {
+                        for (var key in e) {
+                            if (key !== "Country" && key !== "Year" && key !== "Value" && e[key] !== "") {
+                                sectorValues[key] = +e[key];
+                            }
+                        }
+                    });
+
+                    var topSectors = Object.keys(sectorValues).map(function(key) {
+                            return { sector: key, value: sectorValues[key] };
+                        }).sort(function(a, b) {
+                            return b.value - a.value;
+                        }).slice(0, 4);
+
+                    tooltip.style("visibility", "visible")
+                        .attr("transform", "translate(" + (x(sectors[0]['Year']) + 5) + "," + (y(sectors[0]['Total']) + 5) + ")")
+                        .html("<strong>" + country + " (" + year + ")</strong><br>" + topSectors.map(function(e) { return e.sector + ": " + e.value; }).join("<br>"))
+                        .style("left", (event.pageX + 5) + "px")
+                        .style("top", (y(event.pageY) + 5) + "px")
+                }
+
+                function handleMouseOut() {
+                    tooltip.style("visibility", "hidden");
+                }
+
                 countries.forEach(function(countryData, index) {
+                    
+                    const filteredData = countryData.values.filter(d => +d["Year"] <= fromYear);
+                    const transitionData = countryData.values.filter(d => +d["Year"] >= fromYear && +d["Year"] <= toYear);
+                    const countryColor = color(index);
+
                     svg.append("path")
-                        .datum(countryData["values"])
+                        .datum(filteredData)
                         .attr("fill", "none")
-                        .attr("stroke", color(index))
+                        .attr("stroke", countryColor)
                         .attr("stroke-width", 1.5)
                         .attr("d", line)
+                        .on("mouseover", function(event) { handleMouseOver.call(this, event, filteredData); })
+                        .on("mouseout", handleMouseOut);
+
+                    var transitionGraph = svg.append("path")
+                        .datum(transitionData)
+                        .attr("fill", "none")
+                        .attr("stroke", countryColor)
+                        .attr("stroke-width", 1.5)
+                        .attr("d", line)
+                        .on("mouseover", function(event) { handleMouseOver.call(this, event, transitionData); })
+                        .on("mouseout", handleMouseOut);
+
+                    var transitionLength = transitionGraph.node().getTotalLength();
+
+                    transitionGraph.attr("stroke-dasharray", transitionLength + " " + transitionLength)
+                        .attr("stroke-dashoffset", transitionLength)
+                        .transition()
+                        .duration(1250)
+                        .ease(d3.easeLinear)
+                        .attr("stroke-dashoffset", 0);
                 });
-
-                // var path = svg.append("path")
-                //     .datum(filteredData)
-                //     .attr("fill", "none")
-                //     .attr("stroke", "steelblue")
-                //     .attr("stroke-width", 1.5)
-                //     .attr("d", line);
-
-                // var transitionGraph = svg.append("path")
-                //     .datum(transitionData)
-                //     .attr("fill", "none")
-                //     .attr("stroke", "steelblue")
-                //     .attr("stroke-width", 1.5)
-                //     .attr("d", line);
-
-                // var transitionLength = transitionGraph.node().getTotalLength();
-
-                // transitionGraph.attr("stroke-dasharray", transitionLength + " " + transitionLength)
-                //     .attr("stroke-dashoffset", transitionLength)
-                //     .transition()
-                //     .duration(1500)
-                //     .ease(d3.easeLinear)
-                //     .attr("stroke-dashoffset", 0);
 
                 svg.append("g")
                     .attr("transform", "translate(0," + height + ")")
@@ -157,19 +194,19 @@
                     .text('CO2 Emissions by Top 5 Countries In 2021');
                 
                 var legend = svg.selectAll(".legend")
-                    .data(countries)
-                    .enter()
-                    .append("g")
-                    .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+                            .data(countries)
+                            .enter()
+                            .append("g")
+                            .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
 
                 legend.append("rect")
-                    .attr("x", width - 18)
+                    .attr("x", 150)
                     .attr("width", 18)
                     .attr("height", 18)
                     .style("fill", function(d, i) { return color(i); });
 
                 legend.append("text")
-                    .attr("x", width - 24)
+                    .attr("x", 140)
                     .attr("y", 9)
                     .attr("dy", ".35em")
                     .style("text-anchor", "end")
