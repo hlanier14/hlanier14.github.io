@@ -1,48 +1,49 @@
+<!DOCTYPE html>
 <html>
-    <script src='https://d3js.org/d3.v5.min.js'></script>
-    <style> 
-        body {
-            background-color: white;
-        }
-        h1 {
-            text-align: center;
-            margin-top: 2em;
-        }
-        div.container {
-            display: flex;
-            margin: 6em;
-        }
-        div.scenes {
-            display: flex;
-        }
-        div.textbox {
-            display: block;
-            margin-top: 2em;
-        }
-        button {
-            height: 2em;
-            width: 4em;
-        }
-        button.selected {
-            background-color: steelblue;
-            color: white;
-        }
-        button.normal {
-            background-color: gainsboro;
-        }
-        svg {
-            margin-left: 2em;
-            background-color: gainsboro;
-        }
-    </style>
+    <head>
+        <script src='https://d3js.org/d3.v5.min.js'></script>
+        <style>
+            body {
+                background-color: white;
+            }
+            h1 {
+                text-align: center;
+                margin-top: 2em;
+            }
+            div.container {
+                display: flex;
+                margin: 6em;
+            }
+            div.scenes {
+                display: flex;
+            }
+            div.textbox {
+                display: block;
+                margin-top: 2em;
+            }
+            button {
+                height: 2em;
+                width: 4em;
+            }
+            button.selected {
+                background-color: steelblue;
+                color: white;
+            }
+            button.normal {
+                background-color: gainsboro;
+            }
+            svg {
+                margin-left: 2em;
+                background-color: gainsboro;
+            }
+        </style>
+    </head>
     <body onload='sceneOne()'>
-        <h1>
-            Title
-        </h1>
+        <h1>Title</h1>
         <div class="container">
             <div class="interactions">
                 <div class="scenes">
-                    <button class="normal"onclick='previousScene()'><</button>
+                    <button class="normal" onclick='previousScene()'><</button>
                     <button class="selected" id="1" onclick='sceneOne()'>1</button>
                     <button class="normal" id="2" onclick='sceneTwo()'>2</button>
                     <button class="normal" id="3" onclick='sceneThree()'>3</button>
@@ -50,16 +51,12 @@
                     <button class="normal" onclick='nextScene()'>></button>
                 </div>
                 <div class="textbox">
-                    <h2 class="sceneTitle">
-                        Scene 1
-                    </h2>
-                    <p>
-                        Explination
-                    </p>
+                    <h2 class="sceneTitle">Scene 1</h2>
+                    <p>Explanation</p>
                 </div>
             </div>
             <div class="graph">
-                <svg width=300 height=300></svg>
+                <svg width=1000 height=600></svg>
             </div>
         </div>
         <script>
@@ -67,7 +64,6 @@
             let currentScene = 1;
 
             async function framework(fromYear, toYear) {
-            
                 const data = await d3.csv("https://raw.githubusercontent.com/hlanier14/hlanier14.github.io/main/tuition.csv");
                 var width = 1000;
                 var height = 600;
@@ -76,63 +72,89 @@
 
                 const filteredData = data.filter(d => +d["Year"] <= fromYear);
                 const transitionData = data.filter(d => +d["Year"] >= fromYear && +d["Year"] <= toYear);
+                const allData = data.filter(d => +d["Year"] <= toYear);
 
-                var x = d3.scaleLinear([1963, 2020], [0, width]);
+                var x = d3.scaleLinear().domain([1968, 2020]).range([0, width]);
                 var xaxis = d3.axisBottom(x).tickFormat(d3.format(""));
 
-                var y = d3.scaleLinear([0, 18000], [height, 0]);
+                var y = d3.scaleLinear().domain([0, 18000]).range([height, 0]);
                 var yaxis = d3.axisLeft(y).tickFormat(d3.format("$~s"));
 
                 d3.select("svg")
-                  .selectAll("*")
-                  .remove();
+                    .selectAll("*")
+                    .remove();
 
                 var svg = d3.select("svg")
-                            .attr("width", width + 2 * margin)
-                            .attr("height", height + 2 * margin)
-                            .append("g")
-                            .attr("transform", "translate(" + margin + "," + margin + ")")
+                    .attr("width", width + 2 * margin)
+                    .attr("height", height + 2 * margin)
+                    .append("g")
+                    .attr("transform", "translate(" + margin + "," + margin + ")");
 
-                var graph = svg.append("path")
-                                .datum(filteredData)
-                                .attr("fill", "none")
-                                .attr("stroke", "steelblue")
-                                .attr("stroke-width", 1.5)
-                                .attr("d", d3.line()
-                                             .x(function(d) { return x(+d["Year"]); })
-                                             .y(function(d) { return y(+d["4-Year Tuition in 2020 Dollars"]); }))
-                
+                var line = d3.line()
+                    .x(function(d) { return x(+d["Year"]); })
+                    .y(function(d) { return y(+d["4-Year Tuition in 2020 Dollars"]); });
+
+                var path = svg.append("path")
+                    .datum(filteredData)
+                    .attr("fill", "none")
+                    .attr("stroke", "steelblue")
+                    .attr("stroke-width", 1.5)
+                    .attr("d", line);
+
                 var transitionGraph = svg.append("path")
-                                         .datum(transitionData)
-                                         .attr("fill", "none")
-                                         .attr("stroke", "steelblue")
-                                         .attr("stroke-width", 1.5)
-                                         .attr("d", d3.line()
-                                                      .x(function(d) { return x(+d["Year"]); })
-                                                      .y(function(d) { return y(+d["4-Year Tuition in 2020 Dollars"]); }))
-                
-                var transitionLength = transitionGraph.node()
-                                                      .getTotalLength();
+                    .datum(transitionData)
+                    .attr("fill", "none")
+                    .attr("stroke", "steelblue")
+                    .attr("stroke-width", 1.5)
+                    .attr("d", line);
+
+                var transitionLength = transitionGraph.node().getTotalLength();
 
                 transitionGraph.attr("stroke-dasharray", transitionLength + " " + transitionLength)
-                               .attr("stroke-dashoffset", transitionLength)
-                               .transition()
-                               .duration(1500)
-                               .ease(d3.easeLinear)
-                               .attr("stroke-dashoffset", 0);
+                    .attr("stroke-dashoffset", transitionLength)
+                    .transition()
+                    .duration(1500)
+                    .ease(d3.easeLinear)
+                    .attr("stroke-dashoffset", 0);
+
+                svg.append("g")
+                    .attr("transform", "translate(0," + height + ")")
+                    .call(xaxis);
+
+                svg.append("g")
+                    .call(yaxis);
+
+                svg.append('g')
+                    .attr('transform', 'translate(' + (width / 2) + ', ' + (height + axisLabelOffset) + ')')
+                    .append('text')
+                    .attr('text-anchor', 'middle')
+                    .text('Year');
+
+                svg.append('g')
+                    .attr('transform', 'translate(-' + axisLabelOffset + ', ' + (height / 2) + ')')
+                    .append('text')
+                    .attr('text-anchor', 'middle')
+                    .attr('transform', 'rotate(-90)')
+                    .text('Tuition (In 2020 Dollars)');
+
+                svg.append('g')
+                    .attr('transform', 'translate(' + (width / 2) + ', -' + 25 + ')')
+                    .append('text')
+                    .attr('text-anchor', 'middle')
+                    .text('Annual Tuition for 4-Year Institutions From 1968 to 2020 (Adj. For Inflation)');
 
                 var tooltipGroup = svg.append("g")
-                                      .attr("visibility", "hidden");
-                                      
-                tooltipGroup.append("rect")
-                            .attr("fill", "white")
-                            .attr("width", 150)
-                            .attr("height", 50)
-                            .attr("rx", 10)
-                            .attr("ry", 10);
+                                      .style("visibility", "hidden");
+
+                var tooltipBackground = tooltipGroup.append("rect")
+                                                    .attr("fill", "white")
+                                                    .attr("width", 150)
+                                                    .attr("height", 50)
+                                                    .attr("rx", 10)
+                                                    .attr("ry", 10);
 
                 var tooltipText = tooltipGroup.append("text")
-                                              .attr("opacity", .9)
+                                              .attr("class", "tooltip-text")
                                               .attr("x", 10)
                                               .attr("y", 20);
 
@@ -146,61 +168,60 @@
                            .attr("x", 10)
                            .attr("y", 40);
 
-                svg.selectAll("circle")
-                    .data(filteredData)
-                    .enter()
-                    .append("circle")
-                    .attr("cx", function(d) { return x(+d["Year"]); })
-                    .attr("cy", function(d) { return y(+d["4-Year Tuition in 2020 Dollars"]); })
-                    .attr("r", 2.5)
-                    .attr("fill", "steelblue")
-                    .on("mouseenter", (evt, d) => {
-                        tooltipGroup.attr("transform", "translate(" + (x(evt["Year"]) + 15) + "," + (y(evt["4-Year Tuition in 2020 Dollars"]) + 15) + ")")
-                                    .attr("visibility", "visible");
-                        tooltipGroup.select(".tooltip-year")
-                                    .text(`Year: ${evt["Year"]}`);
-                        tooltipGroup.select(".tooltip-tuition")
-                                    .text(`Tuition: $${evt["4-Year Tuition in 2020 Dollars"].toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`);                    })
-                    .on("mouseout", () => {
-                        tooltipGroup.attr("visibility", "hidden");
-                    });
-                
-                svg.on("mousemove", () => {
-                    // var mouse = d3.mouse(this);
-                    // console.log( d3.event.pageX, d3.event.pageY );
-                })
+                var bisectYear = d3.bisector(function(d) { return +d["Year"]; }).left;
 
-                svg.append("g")
-                   .attr("transform", "translate(0," + height + ")")
-                   .call(xaxis);
+                var focus = svg.append("g")
+                               .style("display", "none");
 
-                svg.append("g")
-                   .call(yaxis);
+                focus.append("circle")
+                     .attr("r", 5)
+                     .attr("fill", "steelblue");
 
-                svg.append('g')
-                   .attr('transform', 'translate(' + (width / 2) + ', ' + (height + axisLabelOffset) + ')')
-                   .append('text')
-                   .attr('text-anchor', 'middle')
-                   .text('Year')
+                svg.append("rect")
+                   .attr("width", width)
+                   .attr("height", height)
+                   .style("fill", "none")
+                   .style("pointer-events", "all")
+                   .on("mouseover", () => { 
+                        focus.style("display", null); 
+                        tooltipGroup.style("visibility", "hidden"); 
+                    })
+                   .on("mouseout", () => { 
+                        focus.style("display", "none");
+                        tooltipGroup.style("visibility", "hidden"); 
+                    })
+                   .on("mousemove", mousemove);
 
-                svg.append('g')
-                   .attr('transform', 'translate(-' + axisLabelOffset + ', ' + (height / 2) + ')')
-                   .append('text')
-                   .attr('text-anchor', 'middle')
-                   .attr('transform', 'rotate(-90)')
-                   .text('Tuition (In 2020 Dollars)')
-                
-                svg.append('g')
-                   .attr('transform', 'translate(' + (width / 2) + ', -' + 25 + ')')
-                   .append('text')
-                   .attr('text-anchor', 'middle')
-                   .text('Annual Tuition for 4-Year InstiTuitions From 1963 to 2020 (Adj. For Inflation)')
+                function mousemove() {
 
+                    var mouse = d3.mouse(this);
+                    var xValue = x.invert(mouse[0]);
+                    var index = bisectYear(allData, xValue, 1);
+
+                    var d0 = allData[index - 1];
+                    var d1 = allData[index];
+                    
+                    if (!d0) {
+                        var d = d1;
+                    } else if (!d1) {
+                        var d = d0;
+                    } else {
+                        var d = xValue - d0["Year"] > d1["Year"] - xValue ? d1 : d0;
+                    }
+
+                    focus.attr("transform", "translate(" + x(d["Year"]) + "," + y(d["4-Year Tuition in 2020 Dollars"]) + ")");
+                    tooltipGroup.attr("transform", "translate(" + (x(d["Year"]) - 75) + "," + (y(d["4-Year Tuition in 2020 Dollars"]) + 25) + ")")
+                                .style("visibility", "visible");
+                    tooltipGroup.select(".tooltip-year")
+                                .text("Year: " + d["Year"]);
+                    tooltipGroup.select(".tooltip-tuition")
+                                .text("Tuition: $" + d["4-Year Tuition in 2020 Dollars"].toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","));
+                }
             }
 
             function clearButtonSelection() {
-                var buttons = document.querySelectorAll("button");   
-                for(var index = 0; index < buttons.length; index++) {   
+                var buttons = document.querySelectorAll("button");
+                for (var index = 0; index < buttons.length; index++) {
                     buttons[index].className = 'normal';
                 }
             }
@@ -219,7 +240,7 @@
                 currentScene = 2;
                 document.getElementsByClassName('sceneTitle')[0].innerText = 'Scene 2';
                 clearButtonSelection();
-                document.getElementById('2').className = 'selected';                
+                document.getElementById('2').className = 'selected';
                 var fromYear = 1980;
                 var toYear = 2000;
                 await framework(fromYear, toYear);
@@ -245,23 +266,23 @@
                 await framework(fromYear, toYear);
             }
 
-            async function previousScene() {
-                if(currentScene === 1 || currentScene === 2) {
-                    sceneOne()
+            function previousScene() {
+                if (currentScene === 1 || currentScene === 2) {
+                    sceneOne();
                 } else if (currentScene === 3) {
-                    sceneTwo()
+                    sceneTwo();
                 } else if (currentScene === 4) {
-                    sceneThree()
+                    sceneThree();
                 }
             }
 
-            async function nextScene() {
-                if(currentScene === 1) {
-                    sceneTwo()
+            function nextScene() {
+                if (currentScene === 1) {
+                    sceneTwo();
                 } else if (currentScene === 2) {
-                    sceneThree()
-                } else if (currentScene === 3) {
-                    sceneFour()
+                    sceneThree();
+                } else if (currentScene === 3 || currentScene === 4) {
+                    sceneFour();
                 }
             }
 
