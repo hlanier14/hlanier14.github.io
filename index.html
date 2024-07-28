@@ -6,7 +6,10 @@
             body {
                 background-color: white;
             }
-            h1 {
+            h3 {
+                font-weight: normal;
+            }
+            div.title {
                 text-align: center;
                 margin-top: 2em;
             }
@@ -23,7 +26,7 @@
             }
             button {
                 height: 2em;
-                width: 4em;
+                width: 4.5em;
             }
             button.selected {
                 background-color: steelblue;
@@ -34,25 +37,28 @@
             }
             svg {
                 margin-left: 2em;
-                background-color: gainsboro;
+                background-color: rgb(242, 243, 244);
             }
         </style>
     </head>
     <body onload='sceneOne()'>
-        <h1>Title</h1>
+        <div class="title">
+            <h1>History of The World's Top 5 Countries by CO2 Emissions</h1>
+            <h3>This visualization was inspired by an <a href="https://www.wri.org/insights/history-carbon-dioxide-emissions">article</a> from the World Resources Institute.</h3>
+        </div>
         <div class="container">
             <div class="interactions">
                 <div class="scenes">
-                    <button class="normal" onclick='previousScene()'><</button>
+                    <button class="normal" onclick='previousScene()'>< Back</button>
                     <button class="selected" id="1" onclick='sceneOne()'>1</button>
                     <button class="normal" id="2" onclick='sceneTwo()'>2</button>
                     <button class="normal" id="3" onclick='sceneThree()'>3</button>
                     <button class="normal" id="4" onclick='sceneFour()'>4</button>
-                    <button class="normal" onclick='nextScene()'>></button>
+                    <button class="normal" onclick='nextScene()'>Next ></button>
                 </div>
                 <div class="textbox">
                     <h2 class="sceneTitle">Scene 1</h2>
-                    <p>Explanation</p>
+                    <h3 class="sceneExplination">Explanation</h3>
                 </div>
             </div>
             <div class="graph">
@@ -63,7 +69,7 @@
 
             let currentScene = 1;
 
-            async function framework(fromYear, toYear) {
+            async function framework(fromYear, toYear, annotation) {
                 const data = await d3.csv("https://raw.githubusercontent.com/hlanier14/hlanier14.github.io/main/data/formatted.csv");
                 var width = 1000;
                 var height = 600;
@@ -96,6 +102,8 @@
 
                 var color = d3.scaleOrdinal(d3.schemeCategory10);
 
+                var rectWidth = 250;
+
                 function mousemove() {
 
                     var mouse = d3.mouse(this);
@@ -124,16 +132,30 @@
                     }).sort(function(a, b) {
                         return b.value - a.value;
                     }).slice(0, 3);
+                    
+                    var containsMan = topSectors.some(obj => { return obj["sector"] == "Manufacturing/Construction" });
+                    if(containsMan) {
+                        tooltip.select(".tooltip-rect")
+                               .attr("width", 250)
+                    } else {
+                        tooltip.select(".tooltip-rect")
+                               .attr("width", 225)
+                    }
+                    
+                    var tooltipXOffset = 10;
+                    var tooltipYOffset = -30;
+                    if(closestPoint["Year"] >= 2015) {
+                        tooltipXOffset = -260;
+                    }
 
                     focus.attr("cx", x(closestPoint["Year"]))
                         .attr("cy", y(closestPoint["Total"]))
                         .style("visibility", "visible");
 
                     tooltip.style("visibility", "visible")
-                        .attr("transform", "translate(" + (x(closestPoint["Year"]) + 10) + "," + (y(closestPoint["Total"]) - 30) + ")");
+                        .attr("transform", "translate(" + (x(closestPoint["Year"]) + tooltipXOffset) + "," + (y(closestPoint["Total"]) + tooltipYOffset) + ")");
 
-                    tooltip.select(".tooltip-country").text(country);
-                    tooltip.select(".tooltip-year").text("Year: " + closestPoint["Year"]);
+                    tooltip.select(".tooltip-country").text(country + " (" + closestPoint["Year"] + ") - " + closestPoint["Total"]);
                     tooltip.select(".tooltip-sectors-1").text(topSectors[0]["sector"] + ": " + Math.round(topSectors[0]["value"]) + "%");
                     tooltip.select(".tooltip-sectors-2").text(topSectors[1]["sector"] + ": " + Math.round(topSectors[1]["value"]) + "%");
                     tooltip.select(".tooltip-sectors-3").text(topSectors[2]["sector"] + ": " + Math.round(topSectors[2]["value"]) + "%");
@@ -154,14 +176,14 @@
                         .datum(filteredData)
                         .attr("fill", "none")
                         .attr("stroke", countryColor)
-                        .attr("stroke-width", 1.5)
+                        .attr("stroke-width", 3)
                         .attr("d", line);
 
                     var transitionGraph = svg.append("path")
                         .datum(transitionData)
                         .attr("fill", "none")
                         .attr("stroke", countryColor)
-                        .attr("stroke-width", 1.5)
+                        .attr("stroke-width", 3)
                         .attr("d", line);
 
                     var transitionLength = transitionGraph.node().getTotalLength();
@@ -171,71 +193,13 @@
                         .transition()
                         .duration(1250)
                         .ease(d3.easeLinear)
-                        .attr("stroke-dashoffset", 0);
+                        .attr("stroke-dashoffset", 0)
+                        .on("end", function() {
+                            if (index === countries.length - 1) {
+                                showAnnotation(annotation);
+                            }
+                        });
                 });
-
-                var focus = svg.append("circle")
-                    .attr("r", 4)
-                    .attr("fill", "steelblue")
-                    .attr("stroke", "white")
-                    .attr("stroke-width", 2)
-                    .style("visibility", "hidden");
-
-                var tooltip = svg.append("g")
-                    .attr("class", "tooltip")
-                    .style("visibility", "hidden");
-
-                svg.append("rect")
-                   .attr("width", width)
-                   .attr("height", height)
-                   .style("fill", "none")
-                   .style("pointer-events", "all")
-                   .on("mouseover", () => { 
-                        focus.style("display", null); 
-                        tooltip.style("visibility", "hidden"); 
-                    })
-                   .on("mouseout", () => { 
-                        focus.style("display", "none");
-                        tooltip.style("visibility", "hidden"); 
-                    })
-                   .on("mousemove", mousemove);
-
-                tooltip.append("rect")
-                    .attr("width", 150)
-                    .attr("height", 60)
-                    .attr("fill", "white")
-                    .attr("stroke", "lightgrey")
-                    .attr("rx", 10)
-                    .attr("ry", 10);
-
-                var tooltipText = tooltip.append("text")
-                    .attr("x", 10)
-                    .attr("y", 20);
-
-                tooltipText.append("tspan")
-                    .attr("class", "tooltip-country")
-                    .attr("x", 10)
-                    .attr("y", 20);
-
-                tooltipText.append("tspan")
-                    .attr("class", "tooltip-year")
-                    .attr("x", 10)
-                    .attr("y", 35);
-
-                tooltipText.append("tspan")
-                    .attr("class", "tooltip-sectors-1")
-                    .attr("x", 10)
-                    .attr("y", 50);
-                
-                tooltipText.append("tspan")
-                    .attr("class", "tooltip-sectors-2")
-                    .attr("x", 10)
-                    .attr("y", 65);
-                
-                tooltipText.append("tspan")
-                    .attr("class", "tooltip-sectors-3")
-                    .attr("x", 10)
-                    .attr("y", 80);
 
                 svg.append("g")
                     .attr("transform", "translate(0," + height + ")")
@@ -281,9 +245,96 @@
                     .attr("dy", ".35em")
                     .style("text-anchor", "end")
                     .text(function(d) { return d.key; });
+                
+                var focus = svg.append("circle")
+                    .attr("r", 4)
+                    .attr("fill", "steelblue")
+                    .attr("stroke", "white")
+                    .attr("stroke-width", 2)
+                    .style("visibility", "hidden");
 
+                var tooltip = svg.append("g")
+                    .attr("class", "tooltip")
+                    .style("visibility", "hidden");
+                
+                tooltip.append("rect")
+                    .attr("class", "tooltip-rect")
+                    .attr("width", 250)
+                    .attr("height", 75)
+                    .attr("fill", "white")
+                    .attr("stroke", "lightgrey")
+                    .attr("rx", 10)
+                    .attr("ry", 10);
+
+                svg.append("rect")
+                   .attr("width", width)
+                   .attr("height", height)
+                   .style("fill", "none")
+                   .style("pointer-events", "all")
+                   .on("mouseover", () => { 
+                        focus.style("display", null); 
+                        tooltip.style("visibility", "hidden"); 
+                    })
+                   .on("mouseout", () => { 
+                        focus.style("display", "none");
+                        tooltip.style("visibility", "hidden"); 
+                    })
+                   .on("mousemove", mousemove);
+
+                var tooltipText = tooltip.append("text")
+                    .attr("x", 10)
+                    .attr("y", 20);
+
+                tooltipText.append("tspan")
+                    .attr("class", "tooltip-country")
+                    .attr("x", 10)
+                    .attr("y", 20);
+
+                tooltipText.append("tspan")
+                    .attr("class", "tooltip-sectors-1")
+                    .attr("x", 10)
+                    .attr("y", 35);
+                
+                tooltipText.append("tspan")
+                    .attr("class", "tooltip-sectors-2")
+                    .attr("x", 10)
+                    .attr("y", 50);
+                
+                tooltipText.append("tspan")
+                    .attr("class", "tooltip-sectors-3")
+                    .attr("x", 10)
+                    .attr("y", 65);
+                
+                function showAnnotation(annotation) {
+                
+                    var annotationGroup = svg.append("g")
+                        .attr("class", "annotation")
+                        .attr("transform", "translate(" + (x(annotation["Year"]) + annotation["xOffset"]) + "," + (y(annotation["Total"]) + annotation["yOffset"]) + ")");
+
+                    annotationGroup.append("rect")
+                        .attr("class", "annotation-rect")
+                        .attr("width", annotation["Width"])
+                        .attr("height", annotation["Height"])
+                        .attr("fill", "none")
+                        .attr("stroke", "none")
+                        .attr("rx", 10)
+                        .attr("ry", 10);
+
+                    annotationGroup.append("text")
+                        .attr("x", 10)
+                        .attr("y", 20)
+                        .text(annotation["Text"]);
+                    
+                    svg.append("circle")
+                        .attr("r", 4)
+                        .attr("fill", "steelblue")
+                        .attr("stroke", "white")
+                        .attr("stroke-width", 2)
+                        .attr("cx", x(annotation["Year"]))
+                        .attr("cy", y(annotation["Total"]));
+                }
             }
-
+            
             function clearButtonSelection() {
                 var buttons = document.querySelectorAll("button");
                 for (var index = 0; index < buttons.length; index++) {
@@ -293,42 +344,82 @@
 
             async function sceneOne() {
                 currentScene = 1;
-                document.getElementsByClassName('sceneTitle')[0].innerText = 'Scene 1';
+                document.getElementsByClassName('sceneTitle')[0].innerText = 'Sharp Decline In Russia';
+                document.getElementsByClassName('sceneExplination')[0].innerText = 'Economic hardship following the dissolution of the Soviet Union in 1991 led to increased beef prices and a drastic decrease in beef consumption, which contributed to a 30% drop of CO2 emissions in Russia from 1991 to 1997.';
                 clearButtonSelection();
                 document.getElementById('1').className = 'selected';
                 var fromYear = 1990;
-                var toYear = 1995;
-                await framework(fromYear, toYear);
+                var toYear = 1997;
+                var annotation = {
+                    "Year": 1991,
+                    "Total": 2136.44,
+                    "Text": "The Soviet Union dissolves in 1991",
+                    "Height": 30,
+                    "Width": 250,
+                    "xOffset": 10,
+                    "yOffset": -20,
+                }
+                await framework(fromYear, toYear, annotation);
             }
 
             async function sceneTwo() {
                 currentScene = 2;
-                document.getElementsByClassName('sceneTitle')[0].innerText = 'Scene 2';
+                document.getElementsByClassName('sceneTitle')[0].innerText = 'China Overtakes the US';
+                document.getElementsByClassName('sceneExplination')[0].innerText = "China becomes the world's top CO2 emitter in 2005 as it's economy and coal usage booms. Emissions from China's Manufacturing / Construction sector rose 139% from 1999 to 2006 and CO2 emitted from Industrial Processes sector increased 106% during the same time period."
                 clearButtonSelection();
                 document.getElementById('2').className = 'selected';
-                var fromYear = 1995;
-                var toYear = 2000;
-                await framework(fromYear, toYear);
+                var fromYear = 1997;
+                var toYear = 2006;
+                var annotation = {
+                    "Year": 2005,
+                    "Total": 5824.59,
+                    "Text": "China passes the US to become the top CO2 emitter",
+                    "Height": 30,
+                    "Width": 355,
+                    "xOffset": 10,
+                    "yOffset": -20,
+                }
+                await framework(fromYear, toYear, annotation);
             }
 
             async function sceneThree() {
                 currentScene = 3;
-                document.getElementsByClassName('sceneTitle')[0].innerText = 'Scene 3';
+                document.getElementsByClassName('sceneTitle')[0].innerText = 'India Steadily Increasing';
+                document.getElementsByClassName('sceneExplination')[0].innerText = "India passes Russia to become the third highest CO2 emitter in 2009. India's population and economic boom led to a 103% increased in emissions from Transportation as well as a 107% increased in CO2 from Manufacturing / Construction from 2000 to 2010.";
                 clearButtonSelection();
                 document.getElementById('3').className = 'selected';
-                var fromYear = 2000;
+                var fromYear = 2006;
                 var toYear = 2010;
-                await framework(fromYear, toYear);
+                var annotation = {
+                    "Year": 2009,
+                    "Total": 1564.32,
+                    "Text": "India becomes the third highest CO2 emitter in 2009",
+                    "Height": 30,
+                    "Width": 355,
+                    "xOffset": 5,
+                    "yOffset": -35,
+                }
+                await framework(fromYear, toYear, annotation);
             }
 
             async function sceneFour() {
                 currentScene = 4;
-                document.getElementsByClassName('sceneTitle')[0].innerText = 'Scene 4';
+                document.getElementsByClassName('sceneTitle')[0].innerText = 'Drop During COVID-19';
+                document.getElementsByClassName('sceneExplination')[0].innerText = 'Activity screeched to a halt across the globe in 2020 during the COVID-19 pandemic. The top 5 countries by CO2 emissions averaged a 6% drop in emissions from 2019 to 2020, with the US led with a 10% decrease.';
                 clearButtonSelection();
                 document.getElementById('4').className = 'selected';
                 var fromYear = 2010;
                 var toYear = 2021;
-                await framework(fromYear, toYear);
+                var annotation = {
+                    "Year": 2020,
+                    "Total": 4319.99,
+                    "Text": "US CO2 emissions drop 10% in 2020",
+                    "Height": 30,
+                    "Width": 150,
+                    "xOffset": -250,
+                    "yOffset": 5,
+                }
+                await framework(fromYear, toYear, annotation);
             }
 
             function previousScene() {
