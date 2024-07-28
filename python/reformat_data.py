@@ -18,6 +18,6 @@ total_2021 = df_pivoted[df_pivoted['Year'] == 2021][['Country', 'Total']]
 top_5_countries = total_2021.nlargest(5, 'Total')['Country']
 df_filtered = df_pivoted[df_pivoted['Country'].isin(top_5_countries)]
 
-df_filtered.drop(['Land-Use Change and Forestry', 'Total excluding LUCF', 'Total including LUCF'], axis=1, inplace=True)
+df_filtered.drop(['Land-Use Change and Forestry', 'Total excluding LUCF', 'Total including LUCF', 'Energy', 'Fugitive Emissions'], axis=1, inplace=True)
 
 df_filtered.to_csv("../data/formatted.csv", index=False)
