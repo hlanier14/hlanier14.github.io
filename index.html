@@ -45,7 +45,7 @@
         <div class="title">
             <h1>History of CO2 Emissions</h1>
             <h3>
-                This visualization was inspired by an 
+                This visualization was inspired by this 
                 <a href="https://www.wri.org/insights/history-carbon-dioxide-emissions">article</a> 
                  from the World Resources Institute. The data used in this dashboard was sourced from the 
                 <a href="https://www.climatewatchdata.org/data-explorer/historical-emissions?historical-emissions-data-sources=climate-watch&historical-emissions-end_year=2021&historical-emissions-gases=co2&historical-emissions-regions=TOP&historical-emissions-sectors=All%20Selected&historical-emissions-start_year=1990&page=1">WRI</a>.
@@ -75,11 +75,13 @@
             let currentScene = 1;
 
             async function framework(fromYear, toYear, annotation) {
-                const data = await d3.csv("https://raw.githubusercontent.com/hlanier14/hlanier14.github.io/main/data/formatted.csv");
+
                 var width = 1000;
                 var height = 600;
                 var margin = 75;
                 var axisLabelOffset = 50;
+
+                const data = await d3.csv("https://raw.githubusercontent.com/hlanier14/hlanier14.github.io/main/data/formatted.csv");
 
                 var x = d3.scaleLinear().domain([1990, 2021]).range([0, width]);
                 var xaxis = d3.axisBottom(x).tickFormat(d3.format(""));
@@ -106,70 +108,6 @@
                     .entries(data);
 
                 var color = d3.scaleOrdinal(d3.schemeCategory10);
-
-                var rectWidth = 250;
-
-                function mousemove() {
-
-                    var mouse = d3.mouse(this);
-
-                    var year = Math.round(x.invert(mouse[0]));
-                    var emissions = y.invert(mouse[1]);
-
-                    const transitionData = data.filter(d => +d["Year"] <= toYear);
-
-                    var closestPoint = transitionData.reduce((prev, curr) => {
-                        var prevDistance = Math.sqrt(Math.pow(x(prev.Year) - mouse[0], 2) + Math.pow(y(prev.Total) - mouse[1], 2));
-                        var currDistance = Math.sqrt(Math.pow(x(curr.Year) - mouse[0], 2) + Math.pow(y(curr.Total) - mouse[1], 2));
-                        return (currDistance < prevDistance) ? curr : prev;
-                    });
-
-                    var country = closestPoint['Country'];
-                    var sectorValues = {};
-                    for (var key in closestPoint) {
-                        if (key !== "Country" && key !== "Year" && key !== "Total" && closestPoint[key] !== "") {
-                            sectorValues[key] = +closestPoint[key] / +closestPoint["Total"] * 100;
-                        }
-                    };
-
-                    var topSectors = Object.keys(sectorValues).map(function(key) {
-                        return { sector: key, value: sectorValues[key] };
-                    }).sort(function(a, b) {
-                        return b.value - a.value;
-                    }).slice(0, 3);
-                    
-                    var containsMan = topSectors.some(obj => { return obj["sector"] == "Manufacturing/Construction" });
-                    if(containsMan) {
-                        tooltip.select(".tooltip-rect")
-                               .attr("width", 250)
-                    } else {
-                        tooltip.select(".tooltip-rect")
-                               .attr("width", 225)
-                    }
-                    
-                    var tooltipXOffset = 10;
-                    var tooltipYOffset = -30;
-                    if(closestPoint["Year"] >= 2015) {
-                        tooltipXOffset = -260;
-                    }
-
-                    focus.attr("cx", x(closestPoint["Year"]))
-                        .attr("cy", y(closestPoint["Total"]))
-                        .style("visibility", "visible");
-
-                    tooltip.style("visibility", "visible")
-                        .attr("transform", "translate(" + (x(closestPoint["Year"]) + tooltipXOffset) + "," + (y(closestPoint["Total"]) + tooltipYOffset) + ")");
-
-                    tooltip.select(".tooltip-country").text(country + " (" + closestPoint["Year"] + ") - " + closestPoint["Total"]);
-                    tooltip.select(".tooltip-sectors-1").text(topSectors[0]["sector"] + ": " + Math.round(topSectors[0]["value"]) + "%");
-                    tooltip.select(".tooltip-sectors-2").text(topSectors[1]["sector"] + ": " + Math.round(topSectors[1]["value"]) + "%");
-                    tooltip.select(".tooltip-sectors-3").text(topSectors[2]["sector"] + ": " + Math.round(topSectors[2]["value"]) + "%");
-                }
-
-                function handleMouseOut() {
-                    tooltip.style("visibility", "hidden");
-                    focus.style("visibility", "hidden");
-                }
 
                 countries.forEach(function(countryData, index) {
                     
@@ -310,6 +248,63 @@
                     .attr("x", 10)
                     .attr("y", 65);
                 
+                function mousemove() {
+
+                    var mouse = d3.mouse(this);
+
+                    var year = Math.round(x.invert(mouse[0]));
+                    var emissions = y.invert(mouse[1]);
+
+                    const transitionData = data.filter(d => +d["Year"] <= toYear);
+
+                    var closestPoint = transitionData.reduce((prev, curr) => {
+                        var prevDistance = Math.sqrt(Math.pow(x(prev.Year) - mouse[0], 2) + Math.pow(y(prev.Total) - mouse[1], 2));
+                        var currDistance = Math.sqrt(Math.pow(x(curr.Year) - mouse[0], 2) + Math.pow(y(curr.Total) - mouse[1], 2));
+                        return (currDistance < prevDistance) ? curr : prev;
+                    });
+
+                    var country = closestPoint['Country'];
+                    var sectorValues = {};
+                    for (var key in closestPoint) {
+                        if (key !== "Country" && key !== "Year" && key !== "Total" && closestPoint[key] !== "") {
+                            sectorValues[key] = +closestPoint[key] / +closestPoint["Total"] * 100;
+                        }
+                    };
+
+                    var topSectors = Object.keys(sectorValues).map(function(key) {
+                        return { sector: key, value: sectorValues[key] };
+                    }).sort(function(a, b) {
+                        return b.value - a.value;
+                    }).slice(0, 3);
+
+                    var containsMan = topSectors.some(obj => { return obj["sector"] == "Manufacturing/Construction" });
+                    if(containsMan) {
+                        tooltip.select(".tooltip-rect")
+                            .attr("width", 250)
+                    } else {
+                        tooltip.select(".tooltip-rect")
+                            .attr("width", 225)
+                    }
+
+                    var tooltipXOffset = 10;
+                    var tooltipYOffset = -30;
+                    if(closestPoint["Year"] >= 2015) {
+                        tooltipXOffset = -260;
+                    }
+
+                    focus.attr("cx", x(closestPoint["Year"]))
+                        .attr("cy", y(closestPoint["Total"]))
+                        .style("visibility", "visible");
+
+                    tooltip.style("visibility", "visible")
+                        .attr("transform", "translate(" + (x(closestPoint["Year"]) + tooltipXOffset) + "," + (y(closestPoint["Total"]) + tooltipYOffset) + ")");
+
+                    tooltip.select(".tooltip-country").text(country + " (" + closestPoint["Year"] + ") - " + closestPoint["Total"]);
+                    tooltip.select(".tooltip-sectors-1").text(topSectors[0]["sector"] + ": " + Math.round(topSectors[0]["value"]) + "%");
+                    tooltip.select(".tooltip-sectors-2").text(topSectors[1]["sector"] + ": " + Math.round(topSectors[1]["value"]) + "%");
+                    tooltip.select(".tooltip-sectors-3").text(topSectors[2]["sector"] + ": " + Math.round(topSectors[2]["value"]) + "%");
+                }
+                
                 function showAnnotation(annotation) {
                 
                     var annotationGroup = svg.append("g")
@@ -410,7 +405,7 @@
             async function sceneFour() {
                 currentScene = 4;
                 document.getElementsByClassName('sceneTitle')[0].innerText = 'Drop During COVID-19';
-                document.getElementsByClassName('sceneExplination')[0].innerText = 'Activity screeched to a halt across the globe in 2020 during the COVID-19 pandemic. The top 5 countries by CO2 emissions averaged a 6% drop in emissions from 2019 to 2020, with the US led with a 10% decrease.';
+                document.getElementsByClassName('sceneExplination')[0].innerText = 'Activity screeched to a halt across the globe in 2020 during the COVID-19 pandemic. The top 5 countries by CO2 emissions averaged a 6% drop in emissions from 2019 to 2020, led by the US with a 10% decrease.';
                 clearButtonSelection();
                 document.getElementById('4').className = 'selected';
                 var fromYear = 2010;
